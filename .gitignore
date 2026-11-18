@@ -1,0 +1,56 @@
+# Node / Vue
+node_modules/
+dist/
+dist-ssr/
+.vite/
+*.local
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Environment secrets
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Local database / runtime data
+*.sqlite
+*.sqlite3
+data/local/
+uploads/
+storage/
+
+# Test / build
+coverage/
+playwright-report/
+test-results/
+
+# Private keys and certificates
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa
+id_ed25519
