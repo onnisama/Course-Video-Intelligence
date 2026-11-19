@@ -83,11 +83,11 @@
 
 ## 开发与协作规范
 
-### Issue 与任务管理
+### Issue 驱动开发
 
-- 每项需求及其变更都必须创建 GitHub Issue。缺陷和普通技术任务也通过 Issue 跟踪。
-- Issue 正文说明背景、目标、范围和验收标准，负责人使用 `Assignees`，优先级记录在看板的 `Priority` 字段。
-- 需求变更须走申请、评审、批准流程并留痕。记录变更原因、影响分析和批准结论，关联实施 PR 后关闭 Issue。
+- 任何实质性改动开始前，先确认已有 GitHub Issue 是否覆盖该任务，缺少对应 Issue 时先创建。功能、缺陷、需求变更、重构、测试、文档和配置改动均按此执行。
+- Issue 正文写清为什么做（背景与目标）和要做什么（范围与验收标准）。负责人使用 `Assignees`，优先级记录在看板的 `Priority` 字段。
+- 需求变更须走申请、评审、批准流程并留痕。记录变更原因、影响分析和批准结论，实施经关联 PR 合并且满足验收标准后关闭 Issue。
 - 重要决策应在 Issue、PR 或版本化文档中留痕。
 
 Issue 标题使用 `[英文类型] 中文描述` 格式。类型按以下写法保留大小写，右方括号后留一个空格。中文描述写清任务对象和目标，技术名词可保留原文。
@@ -119,8 +119,7 @@ Issue 标题使用 `[英文类型] 中文描述` 格式。类型按以下写法�
 
 ### Git 分支与提交
 
-- `main` 为稳定分支，开启分支保护并通过 PR 合并变更。
-- 功能、缺陷和文档修改均通过独立分支和 PR 完成。
+- `main` 为受保护的稳定分支，所有改动在对应 Issue 的独立工作分支上进行，经 PR 合入 `main`。
 
 分支名建议使用英文类型和以连字符连接的小写英文短名，例如 `feature/transcript-search`。分支类型按改动内容选择。
 
@@ -137,11 +136,56 @@ Commit 首行建议采用 Conventional Commits 格式 `type(scope): 中文描述
 - `docs(readme): 补充项目文档入口`
 - `test(transcript): 补充字幕时间戳边界测试`
 
+### 拉取、同步与推送
+
+以下用 `origin` 表示团队仓库，`docs/git-workflow` 表示工作分支。按顺序逐条执行，遇到错误先处理。切换分支或合并前先用 `git status` 确认当前分支和工作区，妥善保存未提交的改动。
+
+**开始新任务**。确认 Issue 后，从已同步的 `main` 创建工作分支。
+
+```bash
+git switch main
+git pull --ff-only origin main
+git switch -c docs/git-workflow
+```
+
+**接手已有远程分支**。本地首次检出时建立跟踪关系。本地已有该分支时，切换到它并用 `git pull --ff-only` 拉取对应上游。
+
+```bash
+git fetch origin
+git switch --track origin/docs/git-workflow
+```
+
+**同步开发进度**。日常同步同名远程工作分支时用 `git pull --ff-only`。需要将最新 `main` 纳入当前工作分支时，先确认仍在工作分支，再执行下列命令。
+
+```bash
+git fetch origin
+git merge origin/main
+```
+
+如果本地和远程工作分支已分歧，先 `git fetch origin`，用 `git log --oneline --left-right HEAD...origin/docs/git-workflow` 查看双方提交。与协作者确认后，在当前工作分支上执行 `git merge origin/docs/git-workflow`。如有冲突，解决并完成此次合并后复查改动、重跑适用检查，保留已发布的提交历史。
+
+**推送工作分支**。提交并检查改动后，首次推送用 `-u` 建立上游，后续推送显式指定同一分支。因远程有新提交而被拒绝时，先在当前分支执行 `git pull --ff-only`。如果提示两端已分歧，按上面的分歧处理流程同步后再推送。
+
+```bash
+# 首次推送
+git push -u origin docs/git-workflow
+# 后续推送
+git push origin docs/git-workflow
+```
+
+**PR 合并后更新本地**。确认工作区已妥善保存，切回 `main` 并拉取最新合并结果。
+
+```bash
+git switch main
+git pull --ff-only origin main
+```
+
 ### Pull Request
 
 - PR 标题沿用 Issue 的 `[英文类型] 中文描述` 格式，按 PR 实际提交的改动拟定，例如 `[Feature] 实现字幕关键词检索与时间戳跳转` 或 `[Task] 完善项目仓库协作规范`。
-- 每个 PR 应聚焦一个 Issue 或一组紧密相关的改动。正文应说明变更目的、主要改动、关联 Issue、实际运行的测试命令与结果、风险和 AI 参与情况。
-- PR 至少由一名非作者团队成员评审后方可合并。
+- 每个 PR **必须关联一个主 Issue**，并在正文写明为什么做（变更目的）和做了什么（主要改动）。同时列出关联 Issue、实际运行的测试命令与结果、风险和 AI 参与情况。相关 Issue 可作为补充引用。
+- PR 目标为 `main` 且完整解决 Issue 时，在正文使用 `Closes #42`，使 GitHub 在合并时关闭该 Issue。只完成部分工作或仅作背景引用时，使用普通引用 `关联 #42`，保持 Issue 的状态由其验收进度决定。见 [GitHub 的 PR 与 Issue 关联说明](https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/linking-a-pull-request-to-an-issue)。
+- 评审者核对 Issue 关联、改动范围和验收证据。至少一名非作者团队成员批准，所需检查通过，且冲突与评审讨论已解决后，使用 GitHub 的 **Create a merge commit** 将 PR 合入 `main`，保留分支提交历史。见 [GitHub 合并方式说明](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/about-merge-methods-on-github)。
 - 不得通过无意义拆分提交或 PR 数量制造虚假贡献。
 
 ### 质量保障
