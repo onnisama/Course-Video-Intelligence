@@ -1,0 +1,29 @@
+# 文本文件统一在仓库内使用 LF，避免不同成员的系统设置导致整文件改动
+* text=auto eol=lf
+
+# Windows 批处理脚本必须保留 CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# 二进制文件不做换行转换和文本合并
+*.pdf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.mp4 binary
+*.mov binary
+*.mkv binary
+*.webm binary
+*.mp3 binary
+*.wav binary
+*.m4a binary
+*.flac binary
+*.zip binary
+*.docx binary
+*.xlsx binary
+*.pptx binary
+*.woff binary
+*.woff2 binary
