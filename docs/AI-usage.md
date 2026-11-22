@@ -319,8 +319,8 @@ AI 可能多次生成或修改代码。团队应通过稳定的工程资产保�
 - **输入内容摘要：** 仓库 README、项目实施与协作说明、工程实现规范和本机工具链版本.
 - **AI 产出：** `backend/` 的 FastAPI 健康检查接口与 Pytest 用例；`frontend/` 的 Vue 3 + Vite + TypeScript 最小页面与开发代理；GitHub Actions 工作流；README 本地运行章节。
 - **AI 参与比例估计：** 70%
-- **人工审核：** 确认前后端正常运行，CI待推送后审核。
-- **验证方式与结果：** 实际执行 `python -m pytest`（2 passed）；启动 uvicorn 后请求 `GET /api/health`（200，`{"status":"ok"}`）；`pnpm run typecheck` 通过；`pnpm run build` 通过；Vite 开发代理请求返回 200，停掉后端后返回 502。GitHub Actions 尚未运行，待推送后确认。
+- **人工审核：** 确认前后端正常运行，非作者组员已在 PR #8 评审中复核初版的 CI 结果。
+- **验证方式与结果：** 实际执行 `python -m pytest`（2 passed）；启动 uvicorn 后请求 `GET /api/health`（200，`{"status":"ok"}`）；`pnpm run typecheck` 通过；`pnpm run build` 通过；Vite 开发代理请求返回 200，停掉后端后返回 502。GitHub Actions 在初版提交 `b55be1d` 的两次运行中，后端测试、前端类型检查与构建均通过。本轮修订的 CI 结果待推送后核验。 [Push CI](https://github.com/onnisama/Course-Video-Intelligence/actions/runs/44765825808) · [PR CI](https://github.com/onnisama/Course-Video-Intelligence/actions/runs/44765837357)
 - **处理结论：** 采纳
 - **修改或拒绝说明：**无。
 
