@@ -161,6 +161,18 @@ cd backend
 python -m pytest
 ```
 
+### 检查后端数据库连接并执行迁移
+
+启动 PostgreSQL 并安装后端依赖后，在 `backend/` 目录执行以下命令。后端和 Alembic 都读取仓库根目录的 `.env`，进程环境变量优先。`POSTGRES_HOST` 默认为 `127.0.0.1`。如果本地密码含 `$`、`#` 或空格，在 `.env` 中用单引号包住该值。
+
+```bash
+python -m app.database
+python -m alembic upgrade head
+python -m alembic current
+```
+
+连接检查应输出 `1`，迁移状态应显示 `0001 (head)`。`0001` 建立 Alembic 版本基线，业务表由后续功能的迁移创建。运行数据库集成检查时使用单独的本地或 CI 测试库。
+
 ### 启动前端
 
 另开一个终端：
