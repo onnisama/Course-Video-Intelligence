@@ -105,6 +105,70 @@
 
 视频文件与关系型数据库中的业务元数据分开管理。数据库保存文件标识、存储位置、大小、格式和处理状态等信息，不默认将大体积视频二进制内容直接存入关系数据库。
 
+## 本地运行
+
+以下命令在仓库根目录执行。首次运行需安装依赖，之后可直接启动。
+
+### 环境要求
+
+| 工具 | 版本 | 说明 |
+|---|---|---|
+| Python | 3.13 | 后端运行时 |
+| Node.js | 24 | 前端构建与开发服务器 |
+| pnpm | 11.1.1 | 前端包管理器，版本由 `frontend/package.json` 的 `packageManager` 字段固定 |
+
+### 启动后端
+
+```bash
+cd backend
+python -m venv .venv
+
+# Windows PowerShell
+.venv\Scripts\Activate.ps1
+# macOS / Linux
+source .venv/bin/activate
+
+python -m pip install -r requirements-dev.txt
+python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+验证健康检查：
+
+```bash
+curl http://127.0.0.1:8000/api/health
+# {"status":"ok"}
+```
+
+运行后端测试：
+
+```bash
+cd backend
+python -m pytest
+```
+
+### 启动前端
+
+另开一个终端：
+
+```bash
+cd frontend
+pnpm install
+pnpm run dev
+```
+
+浏览器访问 <http://127.0.0.1:5173>。页面经 Vite 开发代理请求 `/api/health` 并显示后端连接状态；后端未启动时页面显示连接失败，可点击「重新检查」重试。若端口 5173 已被占用，Vite 会报错退出，释放端口后再启动。
+
+其他前端命令：
+
+```bash
+pnpm run typecheck   # TypeScript 类型检查
+pnpm run build       # 类型检查 + 生产构建，产物在 frontend/dist/
+```
+
+### 持续集成
+
+`.github/workflows/ci.yml` 在 push 和 Pull Request 时运行后端测试、前端类型检查与构建。
+
 ## 仓库与文档
 
 仓库目前处于项目筹备阶段，已收录项目说明和过程文档。
