@@ -194,7 +194,7 @@ pnpm run build       # 类型检查 + 生产构建，产物在 frontend/dist/
 
 ### 持续集成
 
-`.github/workflows/ci.yml` 在 push 和 Pull Request 时运行后端测试、前端类型检查与构建。
+`.github/workflows/ci.yml` 在 push 和 Pull Request 时运行后端测试、数据库连接与迁移检查、前端类型检查与构建。后端任务使用专用的临时 PostgreSQL 服务，校验连接、执行迁移并检查所有最新版本均已应用。
 
 ## 仓库与文档
 
