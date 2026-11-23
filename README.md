@@ -116,6 +116,21 @@
 | Python | 3.13 | 后端运行时 |
 | Node.js | 24 | 前端构建与开发服务器 |
 | pnpm | 11.1.1 | 前端包管理器，版本由 `frontend/package.json` 的 `packageManager` 字段固定 |
+| Docker Compose | 支持 `up --wait` | 启动本地 PostgreSQL |
+
+### 启动本地 PostgreSQL
+
+启动 Docker 后，首次使用时将根目录的 `.env.example` 复制为 `.env`，填写自己的本地开发密码 `POSTGRES_PASSWORD`。默认端口为 `5432`。如果端口已被占用，修改 `.env` 中的 `POSTGRES_PORT`。
+
+```bash
+docker compose up -d --wait db
+docker compose ps db
+docker compose exec db psql -h 127.0.0.1 -U course_video -d course_video -W -tAc 'SELECT 1'
+```
+
+容器状态应为 `healthy`。最后一条命令使用示例中的用户名和库名，输入本地密码后应输出 `1`。本机客户端使用 `127.0.0.1` 和 `.env` 中的 `POSTGRES_PORT` 连接。
+
+执行 `docker compose down` 可停止开发数据库，数据保存在 `postgres_data` 命名卷中。用户名、库名和密码在数据卷首次初始化时生效。
 
 ### 启动后端
 
