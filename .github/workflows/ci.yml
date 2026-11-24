@@ -11,6 +11,22 @@ jobs:
   backend:
     name: 后端测试
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17.12-bookworm
+        env:
+          POSTGRES_DB: course_video_test
+          POSTGRES_USER: course_video_test
+          POSTGRES_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
+          POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+        ports:
+          - 5432/tcp
+        options: >-
+          --health-cmd "pg_isready -h 127.0.0.1 -U course_video_test -d course_video_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-start-period 10s
+          --health-retries 12
     defaults:
       run:
         working-directory: backend
@@ -23,13 +39,27 @@ jobs:
         with:
           python-version: '3.13'
           cache: pip
-          cache-dependency-path: backend/requirements-dev.txt
+          cache-dependency-path: |
+            backend/requirements.txt
+            backend/requirements-dev.txt
 
       - name: 安装依赖
         run: python -m pip install -r requirements-dev.txt
 
       - name: 运行测试
         run: python -m pytest
+
+      - name: 检查数据库连接与迁移
+        env:
+          POSTGRES_DB: course_video_test
+          POSTGRES_USER: course_video_test
+          POSTGRES_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
+          POSTGRES_HOST: 127.0.0.1
+          POSTGRES_PORT: ${{ job.services.postgres.ports['5432'] }}
+        run: |
+          python -m app.database
+          python -m alembic upgrade head
+          python -m alembic current --check-heads
 
   frontend:
     name: 前端检查与构建

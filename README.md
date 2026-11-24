@@ -116,6 +116,21 @@
 | Python | 3.13 | 后端运行时 |
 | Node.js | 24 | 前端构建与开发服务器 |
 | pnpm | 11.1.1 | 前端包管理器，版本由 `frontend/package.json` 的 `packageManager` 字段固定 |
+| Docker Compose | 支持 `up --wait` | 启动本地 PostgreSQL |
+
+### 启动本地 PostgreSQL
+
+启动 Docker 后，首次使用时将根目录的 `.env.example` 复制为 `.env`，填写自己的本地开发密码 `POSTGRES_PASSWORD`。默认端口为 `5432`。如果端口已被占用，修改 `.env` 中的 `POSTGRES_PORT`。
+
+```bash
+docker compose up -d --wait db
+docker compose ps db
+docker compose exec db psql -h 127.0.0.1 -U course_video -d course_video -W -tAc 'SELECT 1'
+```
+
+容器状态应为 `healthy`。最后一条命令使用示例中的用户名和库名，输入本地密码后应输出 `1`。本机客户端使用 `127.0.0.1` 和 `.env` 中的 `POSTGRES_PORT` 连接。
+
+执行 `docker compose down` 可停止开发数据库，数据保存在 `postgres_data` 命名卷中。用户名、库名和密码在数据卷首次初始化时生效。
 
 ### 启动后端
 
@@ -146,6 +161,18 @@ cd backend
 python -m pytest
 ```
 
+### 检查后端数据库连接并执行迁移
+
+启动 PostgreSQL 并安装后端依赖后，在 `backend/` 目录执行以下命令。后端和 Alembic 都读取仓库根目录的 `.env`，进程环境变量优先。`POSTGRES_HOST` 默认为 `127.0.0.1`。如果本地密码含 `$`、`#` 或空格，在 `.env` 中用单引号包住该值。
+
+```bash
+python -m app.database
+python -m alembic upgrade head
+python -m alembic current
+```
+
+连接检查应输出 `1`，迁移状态应显示 `0001 (head)`。`0001` 建立 Alembic 版本基线，业务表由后续功能的迁移创建。运行数据库集成检查时使用单独的本地或 CI 测试库。
+
 ### 启动前端
 
 另开一个终端：
@@ -167,7 +194,7 @@ pnpm run build       # 类型检查 + 生产构建，产物在 frontend/dist/
 
 ### 持续集成
 
-`.github/workflows/ci.yml` 在 push 和 Pull Request 时运行后端测试、前端类型检查与构建。
+`.github/workflows/ci.yml` 在 push 和 Pull Request 时运行后端测试、数据库连接与迁移检查、前端类型检查与构建。后端任务使用专用的临时 PostgreSQL 服务，校验连接、执行迁移并检查所有最新版本均已应用。
 
 ## 仓库与文档
 
