@@ -198,6 +198,73 @@ pnpm run build       # 类型检查 + 生产构建，产物在 frontend/dist/
 
 组内服务器的启动、验证和回滚步骤见[联调环境部署说明](deploy/README.md)。
 
+## Ubuntu 服务器生产部署
+
+使用 `docker-compose.prod.yml` 运行前端、FastAPI 和 PostgreSQL。Vue 构建产物由 Nginx 提供，浏览器通过同源的 `/api/` 访问 FastAPI。Nginx 保留请求的 `/api/` 路径，前端深链接则回退到 `index.html`。入口只发布 `80:80`，FastAPI 和 PostgreSQL 使用容器内网。PostgreSQL 的命名卷与本地和联调环境隔离。
+
+### 1. 检出待部署的代码
+
+在已安装 Git、Docker Engine 和 Docker Compose 的 Ubuntu 服务器上执行。以下以部署最新 `main` 为例。由团队确认 `git rev-parse HEAD` 输出的 SHA，再开始部署。已有部署目录时，进目录检查 `git status --short`，再从 `git fetch` 开始。
+
+```bash
+git clone https://github.com/onnisama/Course-Video-Intelligence.git
+cd Course-Video-Intelligence
+git fetch origin main
+git switch --detach origin/main
+git rev-parse HEAD
+docker compose version
+```
+
+### 2. 配置环境、构建并迁移
+
+首次部署时执行下面的命令，并用文本编辑器在 `.env.production` 中设置专用的 `POSTGRES_PASSWORD` 和 `PROD_IMAGE_TAG`。建议用第 1 步确认的提交 SHA 作为镜像标签。容器内的数据库地址固定为 `db:5432`，模板中的 `POSTGRES_HOST` 和 `POSTGRES_PORT` 供本地开发使用。启动 Web 容器前，确认 ECS 的 TCP `80` 入方向规则仍限制在获准范围内。升级已有数据库前，由团队确认备份和迁移方案。
+
+```bash
+umask 077
+if [ ! -f .env.production ]; then cp .env.example .env.production; fi
+chmod 600 .env.production
+```
+
+```bash
+dc() { docker compose --env-file .env.production -f docker-compose.prod.yml "$@"; }
+dc config --quiet &&
+dc build &&
+dc up -d --wait db &&
+dc run --rm -T backend python -m alembic upgrade head &&
+dc run --rm -T backend python -m alembic current --check-heads &&
+dc up -d --wait
+```
+
+如果服务器无法获取构建依赖，可以在同架构构建机上用相同的代码和 `PROD_IMAGE_TAG` 执行 `dc build`。以提交 SHA 作为镜像标签时，可以这样导出镜像：
+
+```bash
+tag=$(git rev-parse HEAD)
+docker pull postgres:17.12-bookworm
+docker image save -o course-video-images.tar \
+  "course-video-production-backend:$tag" \
+  "course-video-production-web:$tag" \
+  postgres:17.12-bookworm
+```
+
+通过授权的 SSH 通道把镜像包传到服务器，再执行 `docker image load -i course-video-images.tar`。服务器使用相同的 `PROD_IMAGE_TAG` 并跳过构建。启动服务时使用 `up -d --wait --no-build --pull never`，一次性迁移命令使用 `run --rm -T --pull never`。
+
+### 3. 验收并放行组内访问
+
+先在服务器上验证服务。预期三个容器均为 `healthy`，健康接口返回 `{"status":"ok"}`，数据库查询返回 `1`，迁移版本与代码一致。
+
+```bash
+dc ps
+curl -fsS http://127.0.0.1/api/health
+dc exec -T backend python -m app.database
+dc exec -T backend python -m alembic current --check-heads
+```
+
+确认公网发布条件和备案要求后，由部署负责人在阿里云 ECS 安全组添加 TCP `80` 入方向规则，授权范围按组内测试需要配置。复核 `8000` 和 `5432` 的入方向权限。随后请组员用浏览器打开服务器公网 IP，确认页面显示「连接成功」，并检查 `/api/health`。HTTP 暂用于课程组内测试，传输不具备 HTTPS 加密保护，测试使用合成数据。中国内地服务器通过公网 IP 提供 Web 服务也适用备案要求。 [阿里云安全组说明](https://help.aliyun.com/zh/ecs/user-guide/start-using-security-groups) · [阿里云 IP 网站备案说明](https://help.aliyun.com/zh/icp-filing/basic-icp-service/product-overview/icp-filing-requirements-for-a-regular-website)
+
+### 4. 停止和回滚
+
+使用 `dc down` 停止服务，生产数据库数据保留在本项目的命名卷中。恢复时用同一份 `.env.production` 执行 `dc up -d --wait --no-build --pull never`。应用回滚时检出前一个已验收的提交，并在 `.env.production` 选择该版本的镜像标签。由团队确认数据库兼容性后启动并复跑第 3 步。
+
 ## 仓库与文档
 
 仓库目前处于项目筹备阶段，已收录项目说明和过程文档。
