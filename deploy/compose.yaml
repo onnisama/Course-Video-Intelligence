@@ -45,7 +45,9 @@ services:
 
   web:
     image: course-video-integration-web:${INTEGRATION_IMAGE_TAG:-local}
-    build: ../frontend
+    build:
+      context: ..
+      dockerfile: frontend/Dockerfile
     ports:
       - "127.0.0.1:${INTEGRATION_PORT:-18080}:80"
     depends_on:
