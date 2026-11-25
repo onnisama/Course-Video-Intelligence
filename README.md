@@ -196,6 +196,8 @@ pnpm run build       # 类型检查 + 生产构建，产物在 frontend/dist/
 
 `.github/workflows/ci.yml` 在 push 和 Pull Request 时运行后端测试、数据库连接与迁移检查、前端类型检查与构建。后端任务使用专用的临时 PostgreSQL 服务，校验连接、执行迁移并检查所有最新版本均已应用。
 
+组内服务器的启动、验证和回滚步骤见[联调环境部署说明](deploy/README.md)。
+
 ## 仓库与文档
 
 仓库目前处于项目筹备阶段，已收录项目说明和过程文档。
