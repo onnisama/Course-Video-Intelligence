@@ -45,7 +45,7 @@
 |---|---|
 | 教师 | 具备创建权限时可创建课程。具备目标课程的相应权限时，可编辑课程信息、管理成员、上传视频、确认外部处理授权、发起或重试生成任务、修订和审核内容。发布须具备该课程的发布权限。 |
 | 助教 | 在获授权的课程核对已上传视频的文件名和上传时间；具备相应编辑权限时，可校对字幕、修正时间戳、修订章节和摘要，并提交教师审核。 |
-| 学生 | 进入获授权的课程，播放已发布视频，检索已发布字幕并跳转到对应时间点。内容可见性按 §6.2 核对。 |
+| 学生 | 进入获授权的课程，播放已发布视频，检索已发布字幕并跳转到对应时间点，对已发布内容中的自动生成部分提交错误反馈。内容可见性按 §6.2 核对。 |
 
 ## 3. 用例图与典型场景
 
@@ -138,7 +138,7 @@ A 模块的用例名称、临时编号和参与者见 [§4.1 课程与权限](#4
 
 **负责人** D。
 
-**主要参与者**为助教和教师。**次要参与者**为学生和内容审核与发布服务。场景涉及 `UC-REV-01` 校对字幕文本、`UC-REV-02` 修正字幕时间戳、`UC-REV-03` 修订章节与摘要和 `UC-REV-04` 审核发布。
+**主要参与者**为助教和教师。**次要参与者**为学生（发布后受益）。场景涉及 `UC-REV-01` 校对字幕文本、`UC-REV-02` 修正字幕时间戳、`UC-REV-03` 修订章节与摘要和 `UC-REV-04` 审核发布。
 
 **前置条件**为视频已完成字幕与章节生成并处于「待审核」状态，助教拥有该课程的编辑权限，教师拥有该课程的发布权限。
 
@@ -200,7 +200,7 @@ A 模块的用例名称、临时编号和参与者见 [§4.1 课程与权限](#4
 
 #### FR-CRS-04 · 管理课程成员
 
-**用例 `UC-CRS-04`**。主要参与者为有该课程成员管理权限的教师，次要参与者为涉及授权的学生或助教。系统应允许该教师为指定账号授予或撤销本课程的学生或助教权限。 [Task #14](https://github.com/onnisama/Course-Video-Intelligence/issues/14) · [Issue #10 助教查看权限](https://github.com/onnisama/Course-Video-Intelligence/issues/10)
+**用例 `UC-CRS-04`**。主要参与者为有该课程成员管理权限的教师，次要参与者为涉及授权的学生或助教。系统应允许该教师为指定账号授予或撤销本课程的学生或助教权限。 [Issue #24](https://github.com/onnisama/Course-Video-Intelligence/issues/24) · [Task #14](https://github.com/onnisama/Course-Video-Intelligence/issues/14) · [Issue #10 助教查看权限](https://github.com/onnisama/Course-Video-Intelligence/issues/10)
 
 - **Given** 教师对课程 A 有成员管理权限，测试账号有效且还不是课程 A 的成员。
 - **When** 教师为该账号授予课程 A 的学生或助教权限。
@@ -209,7 +209,7 @@ A 模块的用例名称、临时编号和参与者见 [§4.1 课程与权限](#4
 
 #### FR-CRS-05 · 访问获授权课程
 
-**用例 `UC-CRS-05`**。主要参与者为教师、助教和学生。系统应允许用户进入其有权访问的课程，并按课程权限提供对应资源和操作。 [Task #14](https://github.com/onnisama/Course-Video-Intelligence/issues/14) · [Issue #18 发布后学生可见](https://github.com/onnisama/Course-Video-Intelligence/issues/18)
+**用例 `UC-CRS-05`**。主要参与者为教师、助教和学生。系统应允许用户进入其有权访问的课程，并按课程权限提供对应资源和操作。 [Issue #25](https://github.com/onnisama/Course-Video-Intelligence/issues/25) · [Task #14](https://github.com/onnisama/Course-Video-Intelligence/issues/14) · [Issue #18 发布后学生可见](https://github.com/onnisama/Course-Video-Intelligence/issues/18)
 
 - **Given** 测试学生只获授权访问课程 A，课程 A 有已发布视频，课程 B 也有已发布视频。
 - **When** 学生打开课程列表，进入课程 A，并尝试直接打开课程 B 的链接。
@@ -217,7 +217,7 @@ A 模块的用例名称、临时编号和参与者见 [§4.1 课程与权限](#4
 
 #### FR-CRS-06 · 确认外部处理授权
 
-**用例 `UC-CRS-06`**。主要参与者为有该视频处理权限的教师。发起生成前，系统应让教师对照 §6.1 确认该视频及其派生数据的外发授权范围，并关联到原视频，供生成和重试时校验。 [Task #14](https://github.com/onnisama/Course-Video-Intelligence/issues/14) · [Issue #11 查看生成状态](https://github.com/onnisama/Course-Video-Intelligence/issues/11) · [Issue #12 重试生成](https://github.com/onnisama/Course-Video-Intelligence/issues/12)
+**用例 `UC-CRS-06`**。主要参与者为有该视频处理权限的教师。发起生成前，系统应让教师对照 §6.1 确认该视频及其派生数据的外发授权范围，并关联到原视频，供生成和重试时校验。 [Issue #26](https://github.com/onnisama/Course-Video-Intelligence/issues/26) · [Task #14](https://github.com/onnisama/Course-Video-Intelligence/issues/14) · [Issue #11 查看生成状态](https://github.com/onnisama/Course-Video-Intelligence/issues/11) · [Issue #12 重试生成](https://github.com/onnisama/Course-Video-Intelligence/issues/12)
 
 - **Given** 课程视频已上传，教师有该视频的处理权限，并已核对来源、授权及外发范围。
 - **When** 教师针对该视频提交确认。
@@ -407,21 +407,23 @@ A 模块的用例名称、临时编号和参与者见 [§4.1 课程与权限](#4
 
 **补充验收**
 
+- 未确认的字幕片段或章节任一存在时，发布被拒绝，提示中分别给出两类未确认数量。
+- 审核页支持对字幕片段和章节分别批量确认；批量确认 N 条后，该类未确认数量减少 N。
 - 调用者无该课程发布权限时，请求被拒绝，视频状态不变。
-- 仍有未确认章节时，发布被拒绝，提示中包含未确认项数量。
 - 已发布内容被修改后，视频状态回到待审核。
 
 #### FR-REV-05 · 提交内容错误反馈
 
 **用例 `UC-REV-05`**。系统应允许学生在已发布内容中识别自动生成的部分，并对具体字幕片段或章节提交错误反馈，教师与助教可查看反馈列表。 [Issue #19](https://github.com/onnisama/Course-Video-Intelligence/issues/19)
 
-- **Given** 学生对课程有访问权限，视频的字幕由 AI 生成且尚未经人工确认。
+- **Given** 学生有权观看已发布的课程视频，目标字幕片段对该学生可见。
 - **When** 学生对该视频的字幕片段提交「术语识别错误」的反馈。
-- **Then** 提交成功，反馈记录包含提交人、片段、内容和提交时间，该课程的教师与助教能在反馈列表中看到。
+- **Then** 提交成功，反馈按片段 ID 关联到该片段，记录包含提交人、片段、内容和提交时间，该课程的教师与助教能在反馈列表中看到。
 
 **补充验收**
 
-- 未经人工确认的自动生成内容在播放页显示生成标识。
+- 已发布视频的字幕在播放页标注由 AI 生成、已经人工确认。
+- 校对文本或调整时间戳后片段 ID 不变，已有反馈仍关联到该片段。
 - 说明文字超过长度上限时，提交被拒绝。
 - 反馈内容为空时，提交被拒绝。
 - 调用者对课程无访问权限时，请求被拒绝。
@@ -472,7 +474,7 @@ A 模块的用例名称、临时编号和参与者见 [§4.1 课程与权限](#4
 
 #### NFR-CRS-01 · 服务端校验课程资源访问权限
 
-服务端应对课程详情、视频列表和播放、字幕和章节、课内检索以及成员或内容修改操作执行课程级权限校验。检索结果及其总数仅来自调用者有权读取的内容。 [工程实现规范](../engineering-guidelines.md#后端) · [Task #14](https://github.com/onnisama/Course-Video-Intelligence/issues/14)
+服务端应对课程详情、视频列表和播放、字幕和章节、课内检索以及成员或内容修改操作执行课程级权限校验。检索结果及其总数仅来自调用者有权读取的内容。 [Issue #27](https://github.com/onnisama/Course-Video-Intelligence/issues/27) · [工程实现规范](../engineering-guidelines.md#后端) · [Task #14](https://github.com/onnisama/Course-Video-Intelligence/issues/14)
 
 - **Given** 课程 A、B 各有一段已发布视频及包含同一关键词的字幕。测试学生只获授权访问课程 A，测试教师只具有课程 A 的管理和编辑权限。
 - **When** 分别使用未登录请求、该学生账号和该教师账号，从页面及相应接口读取或修改课程资源。验收包含直接访问课程 B 的视频播放链接。
@@ -550,9 +552,7 @@ ASR 和 LLM 的凭据由服务端从受控配置读取。前端资源、接口�
 ## 7. 合稿评审待办
 
 - B、D 确认 §5.1 的参数；B、C、D 确认上下文数量和定位误差。
-- D 核对 FR-REV-05 的「尚未经人工确认」与 §6.2 的「已发布且人工确认」冲突，并与最新 Issue #19 统一；本次保留 D 原文供评审，不能据此验收矛盾行为。
-- D 核对 FR-REV-04 的补充验收：当前仅写章节未确认，而 §6.2 与 Issue #18 要求字幕和章节均确认。
-- A、C 核对 CRS-04/05/06 的故事追溯，补充 #24/#25/#26 的关联。
-- 全组核对参与者及 20 个功能用例；内部「内容审核与发布服务」不作为系统外部参与者。首次发起生成在 §3.2.3 中已有流程，但是否独立设用例须由 C 确认。
+- A 复核 §2 学生权限补充项（已补齐「对已发布内容中的自动生成部分提交错误反馈」）。
+- 全组核对参与者及 20 个功能用例；首次发起生成在 §3.2.3 中已有流程，但是否独立设用例须由 C 确认。
 - 非功能需求不强行使用功能用例编号，按 §5 的 Given/When/Then 验收；若课堂要求单独的非功能用例图，由团队确认后补充。
 - 模型源文件 PR 和 SRS 草稿 PR 均关联 #14；草稿提交不关闭尚待全组评审的 #14 或功能实现 Issue。
