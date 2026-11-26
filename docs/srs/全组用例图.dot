@@ -1,0 +1,85 @@
+graph G {
+graph [rankdir=LR,bgcolor="white",fontname="PingFang SC",label="全组用例图（待评审）\n同一系统分模块展示；同名角色表示同一参与者",labelloc=t,fontsize=24,compound=true];
+node [fontname="PingFang SC",fontsize=16];
+edge [color="#94a3b8"];
+subgraph cluster_CRS { label="课程与权限 / 课程视频智能检索平台"; color="#cbd5e1";
+aCRS0 [shape=box,style="rounded",label="«actor»\n教师（主要）"];
+aCRS1 [shape=box,style="rounded",label="«actor»\n助教（主要/次要）"];
+aCRS2 [shape=box,style="rounded",label="«actor»\n学生（主要/次要）"];
+subgraph cluster_sys_CRS { label="系统边界"; color="#64748b";
+"UC-CRS-01" [shape=ellipse,label="UC-CRS-01\n登录与退出"];
+"UC-CRS-02" [shape=ellipse,label="UC-CRS-02\n创建课程"];
+"UC-CRS-03" [shape=ellipse,label="UC-CRS-03\n编辑课程信息"];
+"UC-CRS-04" [shape=ellipse,label="UC-CRS-04\n管理课程成员"];
+"UC-CRS-05" [shape=ellipse,label="UC-CRS-05\n访问获授权课程"];
+"UC-CRS-06" [shape=ellipse,label="UC-CRS-06\n确认外部处理授权"];
+}
+aCRS0 -- "UC-CRS-01";
+aCRS1 -- "UC-CRS-01";
+aCRS2 -- "UC-CRS-01";
+aCRS0 -- "UC-CRS-02";
+aCRS0 -- "UC-CRS-03";
+aCRS0 -- "UC-CRS-04";
+aCRS1 -- "UC-CRS-04";
+aCRS2 -- "UC-CRS-04";
+aCRS0 -- "UC-CRS-05";
+aCRS1 -- "UC-CRS-05";
+aCRS2 -- "UC-CRS-05";
+aCRS0 -- "UC-CRS-06";
+}
+subgraph cluster_SRC { label="学生检索与观看 / 课程视频智能检索平台"; color="#cbd5e1";
+aSRC0 [shape=box,style="rounded",label="«actor»\n学生（主要）"];
+subgraph cluster_sys_SRC { label="系统边界"; color="#64748b";
+"UC-SRC-01" [shape=ellipse,label="UC-SRC-01\n学生在课程内搜索字幕"];
+"UC-SRC-02" [shape=ellipse,label="UC-SRC-02\n学生查看搜索命中的字幕"];
+"UC-SRC-03" [shape=ellipse,label="UC-SRC-03\n学生查看命中字幕的前后文"];
+"UC-SRC-04" [shape=ellipse,label="UC-SRC-04\n学生从搜索结果跳转视频时间点"];
+"UC-SRC-05" [shape=ellipse,label="UC-SRC-05\n学生通过章节目录浏览视频"];
+}
+aSRC0 -- "UC-SRC-01";
+aSRC0 -- "UC-SRC-02";
+aSRC0 -- "UC-SRC-03";
+aSRC0 -- "UC-SRC-04";
+aSRC0 -- "UC-SRC-05";
+}
+subgraph cluster_VID { label="视频上传与处理 / 课程视频智能检索平台"; color="#cbd5e1";
+aVID0 [shape=box,style="rounded",label="«actor»\n教师（主要）"];
+aVID1 [shape=box,style="rounded",label="«actor»\n助教（主要）"];
+aVID2 [shape=box,style="rounded",label="«actor»\nASR（次要）"];
+aVID3 [shape=box,style="rounded",label="«actor»\nLLM（次要）"];
+subgraph cluster_sys_VID { label="系统边界"; color="#64748b";
+"UC-VID-01" [shape=ellipse,label="UC-VID-01\n上传课程视频"];
+"UC-VID-02" [shape=ellipse,label="UC-VID-02\n核对已上传的视频"];
+"UC-VID-03" [shape=ellipse,label="UC-VID-03\n查看字幕和章节的生成状态"];
+"UC-VID-04" [shape=ellipse,label="UC-VID-04\n使用原视频重试生成"];
+}
+aVID0 -- "UC-VID-01";
+aVID1 -- "UC-VID-02";
+aVID0 -- "UC-VID-03";
+aVID0 -- "UC-VID-04";
+aVID2 -- "UC-VID-04";
+aVID3 -- "UC-VID-04";
+}
+subgraph cluster_REV { label="内容审核与发布 / 课程视频智能检索平台"; color="#cbd5e1";
+aREV0 [shape=box,style="rounded",label="«actor»\n教师（主要/次要）"];
+aREV1 [shape=box,style="rounded",label="«actor»\n助教（主要/次要）"];
+aREV2 [shape=box,style="rounded",label="«actor»\n学生（主要/次要）"];
+subgraph cluster_sys_REV { label="系统边界"; color="#64748b";
+"UC-REV-01" [shape=ellipse,label="UC-REV-01\n校对字幕文本"];
+"UC-REV-02" [shape=ellipse,label="UC-REV-02\n修正字幕时间戳"];
+"UC-REV-03" [shape=ellipse,label="UC-REV-03\n修订章节与摘要"];
+"UC-REV-04" [shape=ellipse,label="UC-REV-04\n审核发布"];
+"UC-REV-05" [shape=ellipse,label="UC-REV-05\n提交内容错误反馈"];
+}
+aREV0 -- "UC-REV-01";
+aREV1 -- "UC-REV-01";
+aREV1 -- "UC-REV-02";
+aREV0 -- "UC-REV-03";
+aREV1 -- "UC-REV-03";
+aREV0 -- "UC-REV-04";
+aREV2 -- "UC-REV-04";
+aREV0 -- "UC-REV-05";
+aREV1 -- "UC-REV-05";
+aREV2 -- "UC-REV-05";
+}
+}
