@@ -1,7 +1,13 @@
-name: 部署个人预览
+name: 联调部署
+
+run-name: ${{ github.event_name == 'workflow_run' && format('自动发布组员联调 {0}', github.event.workflow_run.head_sha) || format('手动发布个人预览 {0}', github.sha) }}
 
 on:
   workflow_dispatch:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
 
 permissions: {}
 
@@ -9,13 +15,23 @@ defaults:
   run:
     shell: bash
 
+env:
+  DEPLOY_SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+  DEPLOY_TARGET: ${{ github.event_name == 'workflow_run' && 'integration' || 'preview' }}
+
 concurrency:
-  group: deploy-preview
+  group: deploy-${{ github.event_name == 'workflow_run' && 'integration' || 'preview' }}
   cancel-in-progress: false
+  queue: max
 
 jobs:
   publish:
-    if: github.ref == 'refs/heads/main'
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_run' && vars.INTEGRATION_CD_ENABLED == 'true' &&
+        github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' &&
+        github.event.workflow_run.head_branch == 'main' &&
+        github.event.workflow_run.head_repository.full_name == github.repository)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -23,30 +39,42 @@ jobs:
       contents: read
       packages: write
     outputs:
+      approved: ${{ steps.gate.outputs.approved }}
       compose_hash: ${{ steps.images.outputs.compose_hash }}
       backend_digest: ${{ steps.images.outputs.backend_digest }}
       web_digest: ${{ steps.images.outputs.web_digest }}
     steps:
       - name: 验证本次 main 提交已通过 CI
+        id: gate
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
+          if [[ "$DEPLOY_TARGET" == integration ]]; then
+            main_sha=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq .object.sha)
+            if [[ "$main_sha" != "$DEPLOY_SHA" ]]; then
+              echo "::notice::Skipped superseded main commit $DEPLOY_SHA"
+              exit 0
+            fi
+          fi
           run=$(gh run list --workflow ci.yml --branch main --event push \
-            --commit "$GITHUB_SHA" --limit 1 --json headSha,status,conclusion,url)
-          if ! jq -er --arg sha "$GITHUB_SHA" \
+            --commit "$DEPLOY_SHA" --limit 1 --json headSha,status,conclusion,url)
+          if ! jq -er --arg sha "$DEPLOY_SHA" \
             '.[0] | select(.headSha == $sha and .status == "completed" and .conclusion == "success") | .url' <<< "$run"; then
-            echo "::error::CI has not passed for $GITHUB_SHA on main"
+            echo "::error::CI has not passed for $DEPLOY_SHA on main"
             exit 1
           fi
+          echo 'approved=true' >> "$GITHUB_OUTPUT"
 
       - name: 检出已验证的提交
+        if: steps.gate.outputs.approved == 'true'
         uses: actions/checkout@v7
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ env.DEPLOY_SHA }}
           persist-credentials: false
 
       - name: 构建并发布 SHA 标签镜像
+        if: steps.gate.outputs.approved == 'true'
         id: images
         env:
           GH_TOKEN: ${{ github.token }}
@@ -55,50 +83,65 @@ jobs:
           trap 'docker logout ghcr.io' EXIT
           repository="ghcr.io/${GITHUB_REPOSITORY,,}"
           labels=(--label "org.opencontainers.image.source=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY"
-                  --label "org.opencontainers.image.revision=$GITHUB_SHA")
+                  --label "org.opencontainers.image.revision=$DEPLOY_SHA")
 
           docker buildx build --platform linux/amd64 --push "${labels[@]}" \
-            --tag "${repository}-backend:$GITHUB_SHA" --metadata-file "$RUNNER_TEMP/backend.json" backend
+            --tag "${repository}-backend:$DEPLOY_SHA" --metadata-file "$RUNNER_TEMP/backend.json" backend
           docker buildx build --platform linux/amd64 --push "${labels[@]}" \
-            --tag "${repository}-web:$GITHUB_SHA" --metadata-file "$RUNNER_TEMP/web.json" -f frontend/Dockerfile .
+            --tag "${repository}-web:$DEPLOY_SHA" --metadata-file "$RUNNER_TEMP/web.json" -f frontend/Dockerfile .
 
           backend_digest=$(jq -er '."containerimage.digest"' "$RUNNER_TEMP/backend.json")
           web_digest=$(jq -er '."containerimage.digest"' "$RUNNER_TEMP/web.json")
-          read -r compose_hash _ < <(sha256sum deploy/compose.yaml)
+          compose_file=deploy/compose.yaml
+          if [[ "$DEPLOY_TARGET" == integration ]]; then
+            compose_file=docker-compose.prod.yml
+          fi
+          read -r compose_hash _ < <(sha256sum "$compose_file")
           printf '%s\n' "backend_digest=$backend_digest" "web_digest=$web_digest" \
             "compose_hash=$compose_hash" >> "$GITHUB_OUTPUT"
 
   deploy:
     needs: publish
+    if: needs.publish.outputs.approved == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    environment: preview
+    environment: ${{ github.event_name == 'workflow_run' && 'integration' || 'preview' }}
     permissions:
+      contents: read
       packages: read
     steps:
-      - name: 调用服务器的预览部署入口
+      - name: 调用目标环境的部署入口
         env:
-          PREVIEW_HOST: ${{ secrets.PREVIEW_SSH_HOST }}
-          PREVIEW_KEY: ${{ secrets.PREVIEW_SSH_KEY }}
-          PREVIEW_KNOWN_HOSTS: ${{ secrets.PREVIEW_SSH_KNOWN_HOSTS }}
+          SSH_HOST: ${{ secrets[github.event_name == 'workflow_run' && 'INTEGRATION_SSH_HOST' || 'PREVIEW_SSH_HOST'] }}
+          SSH_KEY: ${{ secrets[github.event_name == 'workflow_run' && 'INTEGRATION_SSH_KEY' || 'PREVIEW_SSH_KEY'] }}
+          SSH_KNOWN_HOSTS: ${{ secrets[github.event_name == 'workflow_run' && 'INTEGRATION_SSH_KNOWN_HOSTS' || 'PREVIEW_SSH_KNOWN_HOSTS'] }}
           GH_TOKEN: ${{ github.token }}
           COMPOSE_HASH: ${{ needs.publish.outputs.compose_hash }}
           BACKEND_DIGEST: ${{ needs.publish.outputs.backend_digest }}
           WEB_DIGEST: ${{ needs.publish.outputs.web_digest }}
         run: |
-          : "${PREVIEW_HOST:?Missing preview SSH host}"
-          : "${PREVIEW_KEY:?Missing preview SSH key}"
-          : "${PREVIEW_KNOWN_HOSTS:?Missing preview SSH host key}"
+          ssh_user=coursemind-deploy
+          if [[ "$DEPLOY_TARGET" == integration ]]; then
+            main_sha=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq .object.sha)
+            if [[ "$main_sha" != "$DEPLOY_SHA" ]]; then
+              echo "::notice::Skipped superseded main commit $DEPLOY_SHA"
+              exit 0
+            fi
+            ssh_user=coursemind-integration-deploy
+          fi
+          : "${SSH_HOST:?Missing deployment SSH host}"
+          : "${SSH_KEY:?Missing deployment SSH key}"
+          : "${SSH_KNOWN_HOSTS:?Missing deployment SSH host key}"
           umask 077
           ssh_dir=$(mktemp -d)
           trap 'rm -rf -- "$ssh_dir"' EXIT
-          printf '%s\n' "$PREVIEW_KEY" > "$ssh_dir/key"
-          printf '%s\n' "$PREVIEW_KNOWN_HOSTS" > "$ssh_dir/known_hosts"
+          printf '%s\n' "$SSH_KEY" > "$ssh_dir/key"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$ssh_dir/known_hosts"
 
-          printf '%s %s %s %s %s\n%s\n' "$GITHUB_SHA" "$COMPOSE_HASH" \
+          printf '%s %s %s %s %s\n%s\n' "$DEPLOY_SHA" "$COMPOSE_HASH" \
             "$BACKEND_DIGEST" "$WEB_DIGEST" "$GITHUB_ACTOR" "$GH_TOKEN" |
             ssh -T -i "$ssh_dir/key" -o IdentitiesOnly=yes -o BatchMode=yes \
               -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$ssh_dir/known_hosts" \
               -o GlobalKnownHostsFile=/dev/null -o ConnectTimeout=15 \
               -o ServerAliveInterval=15 -o ServerAliveCountMax=3 \
-              -- "coursemind-deploy@$PREVIEW_HOST"
+              -- "$ssh_user@$SSH_HOST"
