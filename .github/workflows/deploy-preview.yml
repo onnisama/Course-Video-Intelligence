@@ -1,0 +1,104 @@
+name: 部署个人预览
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: deploy-preview
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      actions: read
+      contents: read
+      packages: write
+    outputs:
+      compose_hash: ${{ steps.images.outputs.compose_hash }}
+      backend_digest: ${{ steps.images.outputs.backend_digest }}
+      web_digest: ${{ steps.images.outputs.web_digest }}
+    steps:
+      - name: 验证本次 main 提交已通过 CI
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          run=$(gh run list --workflow ci.yml --branch main --event push \
+            --commit "$GITHUB_SHA" --limit 1 --json headSha,status,conclusion,url)
+          if ! jq -er --arg sha "$GITHUB_SHA" \
+            '.[0] | select(.headSha == $sha and .status == "completed" and .conclusion == "success") | .url' <<< "$run"; then
+            echo "::error::CI has not passed for $GITHUB_SHA on main"
+            exit 1
+          fi
+
+      - name: 检出已验证的提交
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: 构建并发布 SHA 标签镜像
+        id: images
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          printf '%s' "$GH_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+          trap 'docker logout ghcr.io' EXIT
+          repository="ghcr.io/${GITHUB_REPOSITORY,,}"
+          labels=(--label "org.opencontainers.image.source=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY"
+                  --label "org.opencontainers.image.revision=$GITHUB_SHA")
+
+          docker buildx build --platform linux/amd64 --push "${labels[@]}" \
+            --tag "${repository}-backend:$GITHUB_SHA" --metadata-file "$RUNNER_TEMP/backend.json" backend
+          docker buildx build --platform linux/amd64 --push "${labels[@]}" \
+            --tag "${repository}-web:$GITHUB_SHA" --metadata-file "$RUNNER_TEMP/web.json" -f frontend/Dockerfile .
+
+          backend_digest=$(jq -er '."containerimage.digest"' "$RUNNER_TEMP/backend.json")
+          web_digest=$(jq -er '."containerimage.digest"' "$RUNNER_TEMP/web.json")
+          read -r compose_hash _ < <(sha256sum deploy/compose.yaml)
+          printf '%s\n' "backend_digest=$backend_digest" "web_digest=$web_digest" \
+            "compose_hash=$compose_hash" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    needs: publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: preview
+    permissions:
+      packages: read
+    steps:
+      - name: 调用服务器的预览部署入口
+        env:
+          PREVIEW_HOST: ${{ secrets.PREVIEW_SSH_HOST }}
+          PREVIEW_KEY: ${{ secrets.PREVIEW_SSH_KEY }}
+          PREVIEW_KNOWN_HOSTS: ${{ secrets.PREVIEW_SSH_KNOWN_HOSTS }}
+          GH_TOKEN: ${{ github.token }}
+          COMPOSE_HASH: ${{ needs.publish.outputs.compose_hash }}
+          BACKEND_DIGEST: ${{ needs.publish.outputs.backend_digest }}
+          WEB_DIGEST: ${{ needs.publish.outputs.web_digest }}
+        run: |
+          : "${PREVIEW_HOST:?Missing preview SSH host}"
+          : "${PREVIEW_KEY:?Missing preview SSH key}"
+          : "${PREVIEW_KNOWN_HOSTS:?Missing preview SSH host key}"
+          umask 077
+          ssh_dir=$(mktemp -d)
+          trap 'rm -rf -- "$ssh_dir"' EXIT
+          printf '%s\n' "$PREVIEW_KEY" > "$ssh_dir/key"
+          printf '%s\n' "$PREVIEW_KNOWN_HOSTS" > "$ssh_dir/known_hosts"
+
+          printf '%s %s %s %s %s\n%s\n' "$GITHUB_SHA" "$COMPOSE_HASH" \
+            "$BACKEND_DIGEST" "$WEB_DIGEST" "$GITHUB_ACTOR" "$GH_TOKEN" |
+            ssh -T -i "$ssh_dir/key" -o IdentitiesOnly=yes -o BatchMode=yes \
+              -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$ssh_dir/known_hosts" \
+              -o GlobalKnownHostsFile=/dev/null -o ConnectTimeout=15 \
+              -o ServerAliveInterval=15 -o ServerAliveCountMax=3 \
+              -- "coursemind-deploy@$PREVIEW_HOST"
