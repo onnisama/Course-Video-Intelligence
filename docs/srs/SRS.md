@@ -2,7 +2,7 @@
 
 ## 编号说明
 
-全组草稿统一使用「类型-模块-序号」的格式，便于在需求、用例和 GitHub Issue 之间查找对应关系。
+本文使用「类型-模块-序号」的格式，便于在需求、用例和 GitHub Issue 之间查找对应关系。
 
 | 部分 | 含义 |
 |---|---|
@@ -90,7 +90,7 @@
 - 时间戳缺失、为负数或超出视频时长时，提示无效并停止跳转；视频不可用时提示并停止播放操作。
 - 定位验收使用暂停状态的播放器，在 `seeked` 事件后立即读取 `currentTime`；具体标准见 §4.2。
 
-**评审口径**：默认上下文前后各 1 条、定位误差 ≤ 1.0 秒，与本轮修订的 Issue #30、#31、#32 对齐，作为本地待审稿；后续变更须同步故事与 SRS。
+**检索验收口径**。默认展示命中字幕及紧邻的前后各 1 条字幕。搜索结果和章节目录跳转的定位误差均不超过 1.0 秒。具体测量方法见 §4.2。
 
 **故事追溯**：[#28](https://github.com/onnisama/Course-Video-Intelligence/issues/28)、[#29](https://github.com/onnisama/Course-Video-Intelligence/issues/29)、[#30](https://github.com/onnisama/Course-Video-Intelligence/issues/30)、[#31](https://github.com/onnisama/Course-Video-Intelligence/issues/31)、[#32](https://github.com/onnisama/Course-Video-Intelligence/issues/32)。
 
@@ -261,7 +261,7 @@
 
 **问卷依据与来源**
 
-316 名学生中，133 名（42.1%）难以判断命中内容是否相关，197 名（62.3%）希望看到“命中前后字幕”。前后各 1 条是本次按评审意见明确的默认验收口径，非问卷给出的条数。
+316 名学生中，133 名（42.1%）难以判断命中内容是否相关，197 名（62.3%）希望看到“命中前后字幕”。前后各 1 条为本系统的默认展示范围。
 
 [相关性困难统计](https://github.com/onnisama/Course-Video-Intelligence/blob/1b30fca11c946ee251f86751eee785b119068464/docs/research/%E8%AF%BE%E7%A8%8B%E8%A7%86%E9%A2%91%E5%B9%B3%E5%8F%B0%E9%9C%80%E6%B1%82%E8%B0%83%E7%A0%94%E4%B8%8E%E7%AB%9E%E5%93%81%E5%88%86%E6%9E%90%E6%8A%A5%E5%91%8A.md#L194) · [前后字幕统计](https://github.com/onnisama/Course-Video-Intelligence/blob/1b30fca11c946ee251f86751eee785b119068464/docs/research/%E8%AF%BE%E7%A8%8B%E8%A7%86%E9%A2%91%E5%B9%B3%E5%8F%B0%E9%9C%80%E6%B1%82%E8%B0%83%E7%A0%94%E4%B8%8E%E7%AB%9E%E5%93%81%E5%88%86%E6%9E%90%E6%8A%A5%E5%91%8A.md#L200)
 
@@ -279,7 +279,6 @@
 - 搜索结果的视频 ID 和字幕起始时间必须属于同一片段，不得跳到其他视频或误用字幕结束时间；字幕时间戳修正后按最新可见数据定位，参见 [Issue #16](https://github.com/onnisama/Course-Video-Intelligence/issues/16)。
 - 时间点缺失、为负数或超过视频时长时，系统提示时间点无效，不执行错误跳转。
 - 学生无权访问目标视频，或目标视频未发布、已撤回发布时，服务端拒绝读取和播放，不返回视频内容；参见 [Issue #27](https://github.com/onnisama/Course-Video-Intelligence/issues/27)、[Issue #18](https://github.com/onnisama/Course-Video-Intelligence/issues/18)。
-- 1.0 秒为本次按评审意见写入的草稿验收阈值，后续如需变更应由团队评审并同步 SRS。
 
 **问卷依据与来源**
 
@@ -302,7 +301,7 @@
 - 在暂停状态下，于 seeked 事件后立即读取 currentTime，逐个核对章节起点，定位误差统一为 ≤ 1.0 秒，与 [Issue #31](https://github.com/onnisama/Course-Video-Intelligence/issues/31) 使用相同口径。
 - 章节时间点缺失、为负数或超出视频时长时，提示无效并停止跳转，不定位到错误小节。
 - 学生无权访问课程或视频，或视频被撤回发布时，直接请求章节接口和播放链接均被服务端拒绝，不返回受限章节及视频内容；参见 [Issue #27](https://github.com/onnisama/Course-Video-Intelligence/issues/27)。
-- 1.0 秒为本次按评审意见写入的草稿验收阈值，后续变更须同步 [Issue #31](https://github.com/onnisama/Course-Video-Intelligence/issues/31) 与 SRS；内容发布规则参见 [Issue #18](https://github.com/onnisama/Course-Video-Intelligence/issues/18)。
+- 内容发布规则参见 [Issue #18](https://github.com/onnisama/Course-Video-Intelligence/issues/18)。
 
 **问卷依据与来源**
 
@@ -480,20 +479,17 @@
 
 #### NFR-SRC-01 · 课程内字幕搜索响应性能
 
-系统应在双方确认的测试负载下满足下述响应时延和错误率要求。[Issue #33](https://github.com/onnisama/Course-Video-Intelligence/issues/33)。
+检索接口应在下述测试环境和负载下满足时延和错误率要求。 [Issue #33](https://github.com/onnisama/Course-Video-Intelligence/issues/33)
 
-**评审状态**
-以下为按本轮评审建议提出的具体测试基线，待 B（GuguViolet89）与 D（Lrem1112）共同确认；不是已经批准的需求基线，也不是实测结果。本小节已与 Issue [Issue #33](https://github.com/onnisama/Course-Video-Intelligence/issues/33) 的建议基线同步；双方确认结果须同时记入该 Issue 与本节。未确认前不判定性能验收通过。
-
-**验收标准（B、D 确认基线后执行）**
+**验收标准**
 
 - **Given** 在下述记录完整的测试环境中，单门课程有 10 个各 60 分钟的已发布视频，共 10,000 条合成字幕片段；20 个并发虚拟用户均具有该课程访问权限，使用固定查询集测试。
 - **When** 预热 1 分钟后，进行 3 轮测试，每轮持续 5 分钟，每轮独立统计。
 - **Then** 每轮检索接口端到端 P95 ≤ 500 ms，成功请求的响应时间均 ≤ 3000 ms，错误率 ≤ 1%；超过 3000 ms 的请求按超时失败统计，不能因超时终止而视为满足响应时间上限。任一轮超限则本次验收不通过。
 
-**建议测试基线（待 B、D 确认）**
+**测试基线**
 
-| 参数 | 建议值与执行口径 |
+| 参数 | 数值与执行口径 |
 |---|---|
 | 服务端环境 | 4 vCPU、8 GiB 内存、SSD；API 与数据库在同一测试主机，记录 OS、CPU 型号、应用提交号、依赖及数据库版本；压测客户端独立运行，记录网络 RTT |
 | 数据规模 | 1 门课、10 个各 60 分钟的已发布视频、10,000 条合成字幕；字幕内容、片段分布与生成方法留档 |
@@ -511,10 +507,9 @@
 - 报告逐轮记录请求总数、成功数、失败数、超时数、5xx 数、P50/P95/P99、最大耗时、吞吐量、缓存条件和完整环境。
 - 结果须符合 [Issue #28](https://github.com/onnisama/Course-Video-Intelligence/issues/28) 的课程隔离和已发布内容过滤规则；返回错误或受限内容即使很快，也不视为成功。
 - 三轮均满足阈值才可判定达标；附脚本、合成数据生成方法、原始样本和应用提交号，供复现。
-- B、D 尚未确认环境或任一基线参数时，状态保持“建议基线待确认”；测试尚未运行时不得写“性能已达标”。
 
 **问卷依据**
-316 名学生中，175 名（55.4%）希望在一门课程的全部视频中搜索，对应 US-D01。问卷支持课内搜索场景；上述并发、时延及错误率数值来自本轮评审的工程建议，不是问卷统计。
+316 名学生中，175 名（55.4%）希望在一门课程的全部视频中搜索，对应 US-D01。问卷支持课内搜索场景。并发、时延及错误率按本节性能验收标准测量。
 
 [课内搜索统计](https://github.com/onnisama/Course-Video-Intelligence/blob/1b30fca11c946ee251f86751eee785b119068464/docs/research/%E8%AF%BE%E7%A8%8B%E8%A7%86%E9%A2%91%E5%B9%B3%E5%8F%B0%E9%9C%80%E6%B1%82%E8%B0%83%E7%A0%94%E4%B8%8E%E7%AB%9E%E5%93%81%E5%88%86%E6%9E%90%E6%8A%A5%E5%91%8A.md#L196) · [用户故事 US-D01](https://github.com/onnisama/Course-Video-Intelligence/blob/1b30fca11c946ee251f86751eee785b119068464/docs/research/%E8%AF%BE%E7%A8%8B%E8%A7%86%E9%A2%91%E5%B9%B3%E5%8F%B0%E9%9C%80%E6%B1%82%E8%B0%83%E7%A0%94%E4%B8%8E%E7%AB%9E%E5%93%81%E5%88%86%E6%9E%90%E6%8A%A5%E5%91%8A.md#L294)
 
