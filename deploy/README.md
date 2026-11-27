@@ -47,7 +47,7 @@ curl -fsS http://127.0.0.1:18080/api/health
 
 ### 触发与验收
 
-合并后等待 `main` 的 CI 通过，再在 GitHub **Actions → 部署个人预览 → Run workflow** 选择 `main`，或运行 `gh workflow run deploy-preview.yml --ref main`。在对应运行记录核对 CI 链接、提交 SHA、两张镜像摘要与部署结果。如果 Compose 已修改，先由管理员审查并同步服务器的预览 Compose。
+合并后等待 `main` 的 CI 通过，再在 GitHub **Actions → 联调部署 → Run workflow** 选择 `main`，或运行 `gh workflow run deploy-preview.yml --ref main`。在对应运行记录核对 CI 链接、提交 SHA、两张镜像摘要与部署结果。如果 Compose 已修改，先由管理员审查并同步服务器的预览 Compose。
 
 部署前用候选镜像运行 `SELECT 1` 和 `alembic current --check-heads`。切换后在正在运行的新后端容器中执行同样的只读检查，两项都通过才记录部署成功。切换后检查失败则回滚。如果发现数据库版本不匹配，由团队评审迁移后再重试。
 
@@ -56,6 +56,34 @@ curl -fsS http://127.0.0.1:18080/api/health
 ### 处理部署失败
 
 切换前失败时清理本次临时目录，现有应用继续运行。切换后失败时用本机原有镜像重建前后端，回滚结果写入 Actions 日志。`/opt/course-video-integration/preview-images.yaml` 保存脚本当前选择的镜像，管理员手工执行 Compose 时应把它作为第二个 `-f` 文件。若日志显示回滚也失败，由管理员根据 Actions 日志确认上一版的镜像引用，检查数据库兼容性，再用同一项目、`.env` 和原卷恢复前后端。部署和回滚期间保留上一版镜像供本机使用。
+
+## 自动发布到组员联调环境
+
+启用后，`CI` 在 `main` 的 push 上成功完成时，工作流使用该次 CI 检查过的提交发布 GHCR 镜像。组员联调发布串行执行。构建前和连接服务器前均核对该提交仍是 `main` 最新提交，过时的运行会记录跳过。手动触发继续发布到个人预览环境 `18080`。
+
+### 首次启用
+
+1. 经团队确认，由管理员从已评审的 `main` 安装脚本，并为 `coursemind-integration-deploy` 配置独立的部署密钥。该账号只使用下列强制命令，无其他登录方式、额外 sudo 权限或 `docker` 组成员资格。使用 `visudo -f /etc/sudoers.d/coursemind-integration` 保存规则并用 `visudo -c` 核验。
+
+   ```bash
+   sudo install -o root -g root -m 0755 deploy/preview-deploy.sh /usr/local/sbin/coursemind-integration-deploy
+   ```
+
+   ```text
+   restrict,command="/usr/bin/sudo -n /usr/local/sbin/coursemind-integration-deploy integration" <专用部署公钥>
+   ```
+
+   ```sudoers
+   coursemind-integration-deploy ALL=(root) NOPASSWD: /usr/local/sbin/coursemind-integration-deploy integration
+   ```
+
+2. 核对 `/opt/course-video-prod-trial` 的 `source-path` 指向含已审查 `docker-compose.prod.yml` 的检出目录。该目录、部署脚本、`.env` 和 `loopback.yaml` 由管理员维护。继续使用 `course-video-prod-trial` 项目及其现有数据库卷。`loopback.yaml` 用 `!override` 将 Web 端口覆盖为 `127.0.0.1:18081:80`，脚本会检查生效配置，只允许这个映射。管理员手工操作该项目时，在基础 Compose 和 `loopback.yaml` 后追加生成的 `integration-images.yaml` 作为第三个 `-f` 文件。
+
+3. 在 GitHub 创建 `integration` 环境，部署分支限制为 `main`。在该环境录入 `INTEGRATION_SSH_HOST`、`INTEGRATION_SSH_KEY` 和 `INTEGRATION_SSH_KNOWN_HOSTS`，分别使用服务器地址、组员联调专用私钥和经管理员核对的 `known_hosts` 主机公钥。准备完毕后，将仓库 Actions 变量 `INTEGRATION_CD_ENABLED` 设为 `true`。需要暂停自动发布时，将该变量改为 `false`。
+
+### 验收
+
+启用后等待下一次 `main` 更新并通过 CI。如果设置变量时当前 `main` 的 CI 已结束，可以在该 `main` 提交对应的 **push CI** 页面重新运行 CI，触发首次自动部署。核对部署日志里的上游 CI、完整提交 SHA 和两张镜像摘要，以及服务器实际运行的镜像和部署前后的数据库容器与卷。通过组员原有 SSH 隧道打开 `18081` 对应页面，确认首页和 `/api/health` 返回 HTTP 200。发布脚本在切换前和切换后检查连库及迁移版本，新版本健康检查或数据库检查失败时自动回滚应用镜像。数据库需要迁移时由团队单独评审和执行。
 
 ## 停止与回滚
 
