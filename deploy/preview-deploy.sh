@@ -30,6 +30,7 @@ tmp=$(mktemp -d "$base/.preview-deploy.XXXXXXXX")
 compose=(docker compose --project-name course-video-integration --env-file "$base/.env" -f "$compose_file")
 backend="${registry}-backend@$backend_digest"
 web="${registry}-web@$web_digest"
+database_check='python -m app.database && python -m alembic current --check-heads'
 rollback_needed=0
 
 write_override() {
@@ -109,12 +110,15 @@ rm -rf -- "$tmp/docker"
 
 # Run only read-only database checks with the candidate application image.
 "${compose[@]}" -f "$tmp/candidate.yaml" run --no-deps --rm -T --pull never backend \
-    sh -ec 'python -m app.database && python -m alembic current --check-heads' </dev/null
+    sh -ec "$database_check" </dev/null
 
 rollback_needed=1
 mv -f -- "$tmp/candidate.yaml" "$active_override"
 start_application
 check_application "$backend" "$web" || fail 'Preview HTTP, application image or database container check failed.'
+printf '%s\n' 'Checking database from the running preview backend.'
+"${compose[@]}" -f "$active_override" exec -T backend sh -ec "$database_check" </dev/null ||
+    fail 'Running preview backend failed the database or migration check.'
 
 rollback_needed=0
 printf 'Preview revision=%s backend=%s web=%s\n' "$revision" "$backend" "$web"

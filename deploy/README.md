@@ -47,7 +47,9 @@ curl -fsS http://127.0.0.1:18080/api/health
 
 ### 触发与验收
 
-合并后等待 `main` 的 CI 通过，再在 GitHub **Actions → 部署个人预览 → Run workflow** 选择 `main`，或运行 `gh workflow run deploy-preview.yml --ref main`。在对应运行记录核对 CI 链接、提交 SHA、两张镜像摘要与部署结果。服务器预检会通过候选后端运行 `SELECT 1` 和 `alembic current --check-heads`。如果 Compose 已修改，先由管理员审查并同步服务器的预览 Compose。如果迁移检查发现数据库版本不匹配，先暂停发布并由团队评审迁移。
+合并后等待 `main` 的 CI 通过，再在 GitHub **Actions → 部署个人预览 → Run workflow** 选择 `main`，或运行 `gh workflow run deploy-preview.yml --ref main`。在对应运行记录核对 CI 链接、提交 SHA、两张镜像摘要与部署结果。如果 Compose 已修改，先由管理员审查并同步服务器的预览 Compose。
+
+部署前用候选镜像运行 `SELECT 1` 和 `alembic current --check-heads`。切换后在正在运行的新后端容器中执行同样的只读检查，两项都通过才记录部署成功。切换后检查失败则回滚。如果发现数据库版本不匹配，由团队评审迁移后再重试。
 
 用既有管理员 SSH 入口转发 `18080` 后，在浏览器打开 `http://127.0.0.1:18080/`，检查网页，以及 `/api/health` 的 HTTP 200 和 `{"status":"ok"}`。管理员在服务器对比部署前后的数据库容器 ID 和挂载卷。首次正式启用前，在隔离环境使用健康检查失败的测试镜像演练一次，核对工作流标记失败、上版镜像恢复、原数据库容器和卷仍在，以及首页与健康检查恢复 HTTP 200。
 
