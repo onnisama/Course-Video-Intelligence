@@ -2,7 +2,7 @@
 
 ## 编号说明
 
-全组草稿统一使用「类型-模块-序号」的格式，便于在需求、用例和 GitHub Issue 之间查找对应关系。
+本文使用「类型-模块-序号」的格式，便于在需求、用例和 GitHub Issue 之间查找对应关系。
 
 | 部分 | 含义 |
 |---|---|
@@ -90,7 +90,7 @@
 - 时间戳缺失、为负数或超出视频时长时，提示无效并停止跳转；视频不可用时提示并停止播放操作。
 - 定位验收使用暂停状态的播放器，在 `seeked` 事件后立即读取 `currentTime`；具体标准见 §4.2。
 
-**评审口径**：默认上下文前后各 1 条、定位误差 ≤ 1.0 秒，与本轮修订的 Issue #30、#31、#32 对齐，作为本地待审稿；后续变更须同步故事与 SRS。
+**检索验收口径**。默认展示命中字幕及紧邻的前后各 1 条字幕。搜索结果和章节目录跳转的定位误差均不超过 1.0 秒。具体测量方法见 §4.2。
 
 **故事追溯**：[#28](https://github.com/onnisama/Course-Video-Intelligence/issues/28)、[#29](https://github.com/onnisama/Course-Video-Intelligence/issues/29)、[#30](https://github.com/onnisama/Course-Video-Intelligence/issues/30)、[#31](https://github.com/onnisama/Course-Video-Intelligence/issues/31)、[#32](https://github.com/onnisama/Course-Video-Intelligence/issues/32)。
 
@@ -261,7 +261,7 @@
 
 **问卷依据与来源**
 
-316 名学生中，133 名（42.1%）难以判断命中内容是否相关，197 名（62.3%）希望看到“命中前后字幕”。前后各 1 条是本次按评审意见明确的默认验收口径，非问卷给出的条数。
+316 名学生中，133 名（42.1%）难以判断命中内容是否相关，197 名（62.3%）希望看到“命中前后字幕”。前后各 1 条为本系统的默认展示范围。
 
 [相关性困难统计](https://github.com/onnisama/Course-Video-Intelligence/blob/1b30fca11c946ee251f86751eee785b119068464/docs/research/%E8%AF%BE%E7%A8%8B%E8%A7%86%E9%A2%91%E5%B9%B3%E5%8F%B0%E9%9C%80%E6%B1%82%E8%B0%83%E7%A0%94%E4%B8%8E%E7%AB%9E%E5%93%81%E5%88%86%E6%9E%90%E6%8A%A5%E5%91%8A.md#L194) · [前后字幕统计](https://github.com/onnisama/Course-Video-Intelligence/blob/1b30fca11c946ee251f86751eee785b119068464/docs/research/%E8%AF%BE%E7%A8%8B%E8%A7%86%E9%A2%91%E5%B9%B3%E5%8F%B0%E9%9C%80%E6%B1%82%E8%B0%83%E7%A0%94%E4%B8%8E%E7%AB%9E%E5%93%81%E5%88%86%E6%9E%90%E6%8A%A5%E5%91%8A.md#L200)
 
@@ -279,7 +279,6 @@
 - 搜索结果的视频 ID 和字幕起始时间必须属于同一片段，不得跳到其他视频或误用字幕结束时间；字幕时间戳修正后按最新可见数据定位，参见 [Issue #16](https://github.com/onnisama/Course-Video-Intelligence/issues/16)。
 - 时间点缺失、为负数或超过视频时长时，系统提示时间点无效，不执行错误跳转。
 - 学生无权访问目标视频，或目标视频未发布、已撤回发布时，服务端拒绝读取和播放，不返回视频内容；参见 [Issue #27](https://github.com/onnisama/Course-Video-Intelligence/issues/27)、[Issue #18](https://github.com/onnisama/Course-Video-Intelligence/issues/18)。
-- 1.0 秒为本次按评审意见写入的草稿验收阈值，后续如需变更应由团队评审并同步 SRS。
 
 **问卷依据与来源**
 
@@ -302,7 +301,7 @@
 - 在暂停状态下，于 seeked 事件后立即读取 currentTime，逐个核对章节起点，定位误差统一为 ≤ 1.0 秒，与 [Issue #31](https://github.com/onnisama/Course-Video-Intelligence/issues/31) 使用相同口径。
 - 章节时间点缺失、为负数或超出视频时长时，提示无效并停止跳转，不定位到错误小节。
 - 学生无权访问课程或视频，或视频被撤回发布时，直接请求章节接口和播放链接均被服务端拒绝，不返回受限章节及视频内容；参见 [Issue #27](https://github.com/onnisama/Course-Video-Intelligence/issues/27)。
-- 1.0 秒为本次按评审意见写入的草稿验收阈值，后续变更须同步 [Issue #31](https://github.com/onnisama/Course-Video-Intelligence/issues/31) 与 SRS；内容发布规则参见 [Issue #18](https://github.com/onnisama/Course-Video-Intelligence/issues/18)。
+- 内容发布规则参见 [Issue #18](https://github.com/onnisama/Course-Video-Intelligence/issues/18)。
 
 **问卷依据与来源**
 
@@ -480,7 +479,7 @@
 
 #### NFR-SRC-01 · 课程内字幕搜索响应性能
 
-系统应在约定测试负载下满足下述响应时延和错误率要求。[Issue #33](https://github.com/onnisama/Course-Video-Intelligence/issues/33)。
+检索接口应在下述测试环境和负载下满足时延和错误率要求。 [Issue #33](https://github.com/onnisama/Course-Video-Intelligence/issues/33)
 
 **验收标准**
 
@@ -490,7 +489,7 @@
 
 **测试基线**
 
-| 参数 | 基线值与执行口径 |
+| 参数 | 数值与执行口径 |
 |---|---|
 | 服务端环境 | 4 vCPU、8 GiB 内存、SSD；API 与数据库在同一测试主机，记录 OS、CPU 型号、应用提交号、依赖及数据库版本；压测客户端独立运行，记录网络 RTT |
 | 数据规模 | 1 门课、16 个各 95 分钟的已发布视频、10,000 条合成字幕，并附带少量未发布及跨课程干扰数据以验证过滤规则；字幕内容、片段分布与生成方法留档 |
@@ -510,7 +509,7 @@
 - 三轮均满足阈值才可判定达标；附脚本、合成数据生成方法、原始样本和应用提交号，供复现。
 
 **问卷依据**
-316 名学生中，175 名（55.4%）希望在一门课程的全部视频中搜索，对应 US-D01。问卷支持课内搜索场景；并发、时延与错误率阈值属于工程性能指标，非问卷统计。
+316 名学生中，175 名（55.4%）希望在一门课程的全部视频中搜索，对应 US-D01。问卷支持课内搜索场景；并发、时延与错误率阈值属于工程性能指标，按本节性能验收标准测量。
 
 [课内搜索统计](https://github.com/onnisama/Course-Video-Intelligence/blob/1b30fca11c946ee251f86751eee785b119068464/docs/research/%E8%AF%BE%E7%A8%8B%E8%A7%86%E9%A2%91%E5%B9%B3%E5%8F%B0%E9%9C%80%E6%B1%82%E8%B0%83%E7%A0%94%E4%B8%8E%E7%AB%9E%E5%93%81%E5%88%86%E6%9E%90%E6%8A%A5%E5%91%8A.md#L196) · [用户故事 US-D01](https://github.com/onnisama/Course-Video-Intelligence/blob/1b30fca11c946ee251f86751eee785b119068464/docs/research/%E8%AF%BE%E7%A8%8B%E8%A7%86%E9%A2%91%E5%B9%B3%E5%8F%B0%E9%9C%80%E6%B1%82%E8%B0%83%E7%A0%94%E4%B8%8E%E7%AB%9E%E5%93%81%E5%88%86%E6%9E%90%E6%8A%A5%E5%91%8A.md#L294)
 
