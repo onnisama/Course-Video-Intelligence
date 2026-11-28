@@ -1,0 +1,61 @@
+@startuml
+title 生成任务状态图
+!pragma layout smetana
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName Microsoft YaHei
+skinparam defaultFontSize 15
+skinparam defaultFontColor #24364A
+skinparam titleFontSize 23
+skinparam titleFontColor #24364A
+skinparam shadowing false
+skinparam roundCorner 10
+skinparam ArrowColor #536B7B
+skinparam NoteBackgroundColor #F4F7FA
+skinparam NoteBorderColor #BECAD4
+skinparam NoteFontColor #304357
+skinparam NoteFontSize 14
+skinparam linetype polyline
+skinparam nodesep 32
+skinparam ranksep 34
+skinparam dpi 158
+
+' SRS v1.0 §3.2.3、§4.3 和 §6.1
+' 关联用例 UC-VID-03、UC-VID-04、UC-VID-05
+hide empty description
+skinparam state {
+    BorderColor #698494
+    StartColor #536B7B
+    EndColor #536B7B
+}
+
+state "处理中" as Processing #E9F2FA
+state "成功" as Succeeded #EAF5EF
+state "失败" as Failed #F9EDEB
+
+[*] -down-> Processing
+Processing -down-> Succeeded : 完整结果已生成\n并关联原视频
+Processing -right-> Failed : 生成失败\n/ 显示失败提示
+Failed -left-> Processing : 用原视频重试\n[满足重试条件]
+Succeeded -down-> [*]
+
+note left of Processing
+    **首次发起**
+    教师有处理权限，原视频已保存。
+    外发授权有效，并覆盖语音识别与章节生成。
+end note
+
+note right of Failed
+    **失败与重试**
+    视频仍为草稿，原视频保留。
+    重试须有处理权限、原视频仍在，
+    且外发授权有效并覆盖本次处理。
+    进度仍显示在同一视频记录。
+end note
+
+note right of Succeeded
+    **交付审核**
+    一并交付字幕、章节和摘要。
+    视频进入待审核。
+    字幕片段和章节初始为待确认。
+end note
+@enduml

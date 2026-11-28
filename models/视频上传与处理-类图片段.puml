@@ -1,0 +1,84 @@
+@startuml
+title 视频上传与处理类图片段
+!pragma layout smetana
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName Microsoft YaHei
+skinparam defaultFontSize 15
+skinparam defaultFontColor #24364A
+skinparam titleFontSize 23
+skinparam titleFontColor #24364A
+skinparam shadowing false
+skinparam roundCorner 0
+skinparam ArrowColor #536B7B
+skinparam NoteBackgroundColor #F4F7FA
+skinparam NoteBorderColor #BECAD4
+skinparam NoteFontColor #304357
+skinparam NoteFontSize 14
+skinparam linetype polyline
+skinparam nodesep 38
+skinparam ranksep 43
+skinparam dpi 158
+
+' SRS v1.0 §3.2.3、§4.3 和 §6.2
+' 关联用例 UC-VID-01 至 UC-VID-05
+top to bottom direction
+hide empty members
+hide circle
+skinparam classAttributeIconSize 0
+skinparam class {
+    BackgroundColor #EDF5F6
+    BorderColor #628288
+    ArrowColor #536B7B
+    HeaderBackgroundColor #DCEBED
+}
+
+class "课程" as Course
+class "视频" as Video {
+    视频编号
+    文件名
+    上传时间
+    视频状态
+    --
+    关联完整生成结果()
+}
+
+class "生成任务" as GenerationTask {
+    生成进度
+    失败提示
+    --
+    使用原视频重试()
+}
+
+class "字幕片段" as SubtitleSegment {
+    片段编号
+    字幕文本
+    起始时间
+    结束时间
+    确认状态
+}
+
+class "章节" as Chapter {
+    章节编号
+    标题
+    起始时间
+    结束时间
+    章节摘要
+    确认状态
+}
+
+Course "1" -down- "0..*" Video : 归档
+Video -down- GenerationTask : 原视频
+Video "1" -down- "0..*" SubtitleSegment : 字幕
+Video "1" -down- "0..*" Chapter : 章节
+
+note right of Video
+    **审核交付**
+    生成成功时，将字幕片段、章节
+    和摘要作为同一批结果交付审核。
+end note
+
+note bottom of GenerationTask
+    重试仍关联原视频。
+    各次尝试如何记录在设计时确认。
+end note
+@enduml
